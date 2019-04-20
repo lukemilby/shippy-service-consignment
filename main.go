@@ -16,23 +16,30 @@ const (
 
 type repository interface {
 	Create(*pb.Consignment) (*pb.Consignment, error)
+	GetAll() []*pb.Consignment
 }
 
 // Repository - Dummy repository, this simulates the use of a datastore
 // of some kind. We'll replace this with a real implementation later on.
 type Repository struct {
 	mu sync.RWMutex
-	consignment []*pb.Consignment
+	consignments []*pb.Consignment
 }
 
-
+// Create a new consignment
 func (repo *Repository) Create(consignment *pb.Consignment) (*pb.Consignment, error) {
 	repo.mu.Lock()
-	updated := append(repo.consignment, consignment)
-	repo.consignment = updated
+	updated := append(repo.consignments, consignment)
+	repo.consignments = updated
 	repo.mu.Unlock()
 	return consignment, nil
 }
+
+// GetAll consignments
+func(repo *Repository) GetAll() []*pb.Consignment {
+	return repo.consignments
+}
+
 // Service should implement all of the methods to satisfy the service
 // we defined in our protobuf definition. You can check the interface
 // in the generated code itself for the exact method signatures etc
@@ -52,7 +59,14 @@ func (s *service) CreateConsignment(ctx context.Context, req *pb.Consignment)(*p
 		return nil, err
 	}
 
+	// Return matching the 'Response' message we created in out protobuf definition
 	return &pb.Response{Created: true, Consignment:consignment}, nil
+}
+
+// GetConsignments
+func (s *service) GetConsignments(ctx context.Context, req *pb.GetRequest) (*pb.Response, error) {
+	consignments := s.repo.GetAll()
+	return &pb.Response{Consignments: consignments}, nil
 }
 
 func main() {
